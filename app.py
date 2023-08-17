@@ -44,7 +44,10 @@ def get_article_view_count(article_title):
 
 @app.route('/most_views_day/<article_title>')
 def get_most_views_day(article_title):
-    most_views_day = wrapper.get_day_with_most_views(article_title, 2022, 11)
+    year = int(request.args.get('year', 2023))
+    month = int(request.args.get('month', 1))
+
+    most_views_day = wrapper.get_day_with_most_views(article_title, year, month)
     return jsonify({'article': article_title, 'most_views_day': most_views_day})
 
 

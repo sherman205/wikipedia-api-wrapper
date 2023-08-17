@@ -70,7 +70,8 @@ class WikipediaAPIWrapper:
                     max_views = views
                     max_views_day = timestamp
 
-        return max_views_day
+        date = datetime.strptime(max_views_day, '%Y%m%d%H').strftime('%m/%d/%Y')
+        return date
 
     def _get_articles_request(self, url):
         url = f"{self.base_url}/{url}"
