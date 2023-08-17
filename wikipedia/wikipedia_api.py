@@ -32,12 +32,19 @@ class WikipediaAPIWrapper:
         else:
             articles_data = self._get_articles_request(url_suffix)
 
-        return articles_data[0]["articles"]
+        return articles_data[0]['articles']
 
-    def get_article_view_count(self, article_title, year, month, day):
-        start = f"{year}{month:02d}{day:02d}"
-        end = f"{year}{month:02d}{day:02d}"
+    def get_article_view_count(self, article_title, year, month, start_day=None, end_day=None):
+        if start_day and end_day:
+            start = f"{year}{month:02d}{start_day:02d}"
+            end = f"{year}{month:02d}{end_day:02d}"
+        else:
+            days_in_month = calendar.monthrange(year, month)[1]
+            start = f"{year}{month:02d}01"
+            end = f"{year}{month:02d}{days_in_month}"
+
         url_suffix = f"per-article/en.wikipedia/all-access/all-agents/{article_title}/daily/{start}/{end}"
+
         articles_data = self._get_articles_request(url_suffix)
 
         view_count = 0
