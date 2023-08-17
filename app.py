@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from wikipedia.wikipedia_api import WikipediaAPIWrapper
 
 app = Flask(__name__)
@@ -6,13 +6,23 @@ wrapper = WikipediaAPIWrapper()
 
 
 @app.route('/')
-def hello_world():
+def wikipedia_api_home():
     return "Welcome to the Wikipedia API Flask App!"
 
 
 @app.route('/most_viewed_articles')
 def get_most_viewed_articles():
-    articles = wrapper.get_most_viewed_articles(2022, 11, 10)
+    year = int(request.args.get('year', 2023))
+    month = int(request.args.get('month', 1))
+
+    day = request.args.get('day')
+    start_day = request.args.get('start_day')
+    end_day = request.args.get('end_day')
+    day = int(day) if day else None
+    start_day = int(start_day) if start_day else None
+    end_day = int(end_day) if end_day else None
+
+    articles = wrapper.get_most_viewed_articles(year, month, day, start_day, end_day)
     return jsonify(articles)
 
 
