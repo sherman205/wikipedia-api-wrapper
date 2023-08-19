@@ -1,6 +1,10 @@
+"""
+Information about wikipedia articles using Wikipedia API
+"""
+
 import requests
 import calendar
-from flask import request
+from flask import request, current_app
 from datetime import timedelta, datetime
 
 
@@ -9,6 +13,7 @@ class WikipediaAPIWrapper:
         self.base_url = "https://wikimedia.org/api/rest_v1/metrics/pageviews"
 
     def get_most_viewed_articles(self, year, month, day=None, start_day=None, end_day=None):
+        """Returns a list of the most viewed articles for a week or a month."""
         # API querying based on specific day
         if day:
             url_suffix = f"top/en.wikipedia/all-access/{year}/{month:02d}/{day:02d}"
@@ -35,6 +40,7 @@ class WikipediaAPIWrapper:
         return articles_data[0]['articles']
 
     def get_article_view_count(self, article_title, year, month, start_day=None, end_day=None):
+        """Returns the view count for a specific article for a week or a month."""
         if start_day and end_day:
             start = f"{year}{month:02d}{start_day:02d}"
             end = f"{year}{month:02d}{end_day:02d}"
@@ -54,6 +60,7 @@ class WikipediaAPIWrapper:
         return view_count
 
     def get_day_with_most_views(self, article_title, year, month):
+        """Returns the date when an article got the most page views."""
         days_in_month = calendar.monthrange(year, month)[1]
         start = f"{year}{month:02d}01"
         end = f"{year}{month:02d}{days_in_month}"
@@ -70,18 +77,23 @@ class WikipediaAPIWrapper:
                     max_views = views
                     max_views_day = timestamp
 
-        date = datetime.strptime(max_views_day, '%Y%m%d%H').strftime('%m/%d/%Y')
+        date = datetime.strptime(max_views_day, '%Y%m%d%H').strftime('%m/%d/%Y') if max_views_day else None
         return date
 
     def _get_articles_request(self, url):
+        """Base request function for the Wikipedia API."""
         url = f"{self.base_url}/{url}"
         headers = {'User-Agent': request.headers.get('User-Agent')}
-        response = requests.get(url, headers=headers)
 
-        if response.status_code == 200:
+        try:
+            response = requests.get(url, headers=headers)
+            # raise exception if not 200 status
+            response.raise_for_status()
+
             data = response.json()
             articles_data = data.get('items', [])
-            return articles_data
-        else:
-            print("Failed to retrieve data from the API.")
-            return []
+        except requests.HTTPError as e:
+            current_app.logger.info(f"Failed to retrieve data from the API: {e}")
+            articles_data = []
+
+        return articles_data

@@ -10,4 +10,6 @@ RUN pip install -r requirements.txt
 COPY . /app
 EXPOSE 80
 
+RUN pytest
+
 CMD ["python", "-u", "app.py"]

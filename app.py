@@ -1,3 +1,7 @@
+"""
+Flask routes for Wikipedia API wrapper
+"""
+
 from flask import Flask, jsonify, request
 from wikipedia.wikipedia_api import WikipediaAPIWrapper
 
@@ -7,11 +11,13 @@ wrapper = WikipediaAPIWrapper()
 
 @app.route('/')
 def wikipedia_api_home():
+    """Index route on app load."""
     return "Welcome to the Wikipedia API Flask App!"
 
 
 @app.route('/most_viewed_articles')
 def get_most_viewed_articles():
+    """Endpoint that returns a list of articles with the most views."""
     year = int(request.args.get('year', 2023))
     month = int(request.args.get('month', 1))
 
@@ -29,6 +35,7 @@ def get_most_viewed_articles():
 
 @app.route('/article_view_count/<article_title>')
 def get_article_view_count(article_title):
+    """Endpoint that returns the view count for a specific article."""
     year = int(request.args.get('year', 2023))
     month = int(request.args.get('month', 1))
 
@@ -44,6 +51,7 @@ def get_article_view_count(article_title):
 
 @app.route('/most_views_day/<article_title>')
 def get_most_views_day(article_title):
+    """Endpoint that returns the day with the most views for an article."""
     year = int(request.args.get('year', 2023))
     month = int(request.args.get('month', 1))
 
