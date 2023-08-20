@@ -1,9 +1,10 @@
 """
-Information about wikipedia articles using Wikipedia API
+Logic to calculate info about wikipedia articles using Wikipedia API
 """
 
 import requests
 import calendar
+from typing import Optional, List, Dict
 from flask import request, current_app
 from datetime import timedelta, datetime
 from exception import CustomException
@@ -13,8 +14,18 @@ class WikipediaAPIWrapper:
     def __init__(self):
         self.base_url = "https://wikimedia.org/api/rest_v1/metrics/pageviews"
 
-    def get_most_viewed_articles(self, year, month, day=None, start_day=None, end_day=None):
-        """Returns a list of the top 1000 most viewed articles for a week or a month."""
+    def get_most_viewed_articles(self, year: int, month: int, day: Optional[int] = None,
+                                 start_day: Optional[int] = None, end_day: Optional[int] = None) -> List[Dict]:
+        """
+        Returns a list of the top 1000 most viewed articles for a week or a month.
+
+        :param year:
+        :param month:
+        :param day:
+        :param start_day:
+        :param end_day:
+        :return: a list of dictionaries
+        """
         # API querying based on specific day
         if day:
             url_suffix = f"top/en.wikipedia/all-access/{year}/{month:02d}/{day:02d}"
@@ -65,8 +76,18 @@ class WikipediaAPIWrapper:
         # top 1000 most viewed articles, consistent with Wikipedia's API for list of most viewed articles
         return articles_data[:1000]
 
-    def get_article_view_count(self, article_title, year, month, start_day=None, end_day=None):
-        """Returns the view count for a specific article for a week or a month."""
+    def get_article_view_count(self, article_title: str, year: int, month: int,
+                               start_day: Optional[int] = None, end_day: Optional[int] = None) -> int:
+        """
+        Returns the view count for a specific article for a week or a month.
+
+        :param article_title:
+        :param year:
+        :param month:
+        :param start_day:
+        :param end_day:
+        :return: int representing view count
+        """
         if start_day and end_day:
             start = f"{year}{month:02d}{start_day:02d}"
             end = f"{year}{month:02d}{end_day:02d}"
@@ -88,8 +109,15 @@ class WikipediaAPIWrapper:
                 view_count += article_data['views']
         return view_count
 
-    def get_day_with_most_views(self, article_title, year, month):
-        """Returns the date when an article got the most page views."""
+    def get_day_with_most_views(self, article_title: str, year: int, month: int) -> str:
+        """
+        Returns the date when an article got the most page views.
+
+        :param article_title:
+        :param year:
+        :param month:
+        :return: string representing the date in MM/DD/YYYY format
+        """
         try:
             days_in_month = calendar.monthrange(year, month)[1]
         except Exception as e:
@@ -112,8 +140,13 @@ class WikipediaAPIWrapper:
         date = datetime.strptime(max_views_day, '%Y%m%d%H').strftime('%m/%d/%Y') if max_views_day else None
         return date
 
-    def _get_articles_request(self, url):
-        """Base request function for the Wikipedia API."""
+    def _get_articles_request(self, url: str) -> List:
+        """
+        Base request function for the Wikipedia API.
+
+        :param url:
+        :return:
+        """
         url = f"{self.base_url}/{url}"
         headers = {'User-Agent': request.headers.get('User-Agent')}
 
