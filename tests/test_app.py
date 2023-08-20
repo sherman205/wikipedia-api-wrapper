@@ -6,6 +6,7 @@ import json
 import wikipedia
 from unittest.mock import patch
 from app import app
+from exception import CustomException
 
 
 def test_index_route():
@@ -29,6 +30,16 @@ def test_get_most_viewed_articles(mock_get_most_viewed_articles):
 	assert res[0]['article'] == 'test'
 
 
+@patch.object(wikipedia.wikipedia_api.WikipediaAPIWrapper, 'get_most_viewed_articles')
+def test_get_most_viewed_articles_exception(mock_get_most_viewed_articles):
+	"""Test that /most_viewed_articles bubbles up an Exception."""
+	mock_get_most_viewed_articles.side_effect = CustomException('Custom Error')
+	response = app.test_client().get('/most_viewed_articles')
+
+	assert response.status_code == 200
+	assert b'Custom Error' in response.data
+
+
 @patch.object(wikipedia.wikipedia_api.WikipediaAPIWrapper, 'get_article_view_count')
 def test_get_article_view_count(mock_get_article_view_count):
 	"""Test that /article_view_count endpoint returns 200 status and appropriate json response."""
@@ -44,6 +55,17 @@ def test_get_article_view_count(mock_get_article_view_count):
 	assert res['view_count'] == article_view_count
 
 
+@patch.object(wikipedia.wikipedia_api.WikipediaAPIWrapper, 'get_article_view_count')
+def test_get_article_view_count_exception(mock_get_article_view_count):
+	"""Test that /article_view_count bubbles up an Exception."""
+	article_title = 'test'
+	mock_get_article_view_count.side_effect = CustomException('Custom Error')
+	response = app.test_client().get(f'/article_view_count/{article_title}')
+
+	assert response.status_code == 200
+	assert b'Custom Error' in response.data
+
+
 @patch.object(wikipedia.wikipedia_api.WikipediaAPIWrapper, 'get_day_with_most_views')
 def test_get_most_views_day(mock_get_day_with_most_views):
 	"""Test that /most_views_day endpoint returns 200 status and appropriate json response."""
@@ -57,3 +79,14 @@ def test_get_most_views_day(mock_get_day_with_most_views):
 	assert type(res) is dict
 	assert res['article'] == article_title
 	assert res['most_views_day'] == most_views_date
+
+
+@patch.object(wikipedia.wikipedia_api.WikipediaAPIWrapper, 'get_day_with_most_views')
+def test_get_most_views_day_exception(mock_get_day_with_most_views):
+	"""Test that /most_views_day bubbles up an Exception."""
+	article_title = 'test'
+	mock_get_day_with_most_views.side_effect = CustomException("Custom Error")
+	response = app.test_client().get(f'/most_views_day/{article_title}')
+
+	assert response.status_code == 200
+	assert b'Custom Error' in response.data

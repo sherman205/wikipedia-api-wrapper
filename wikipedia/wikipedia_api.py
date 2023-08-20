@@ -125,7 +125,7 @@ class WikipediaAPIWrapper:
             data = response.json()
             articles_data = data.get('items', [])
         except requests.HTTPError as e:
-            raise CustomException(f"{e}")
             current_app.logger.info(f"Failed to retrieve data from the API: {e}")
+            raise CustomException(f"{e}")
 
         return articles_data

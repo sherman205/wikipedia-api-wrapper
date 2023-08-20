@@ -2,8 +2,9 @@
 Tests for logic in wikipedia_api.py
 """
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from wikipedia.wikipedia_api import WikipediaAPIWrapper
+from app import app
 
 
 @patch.object(WikipediaAPIWrapper, '_get_articles_request')
@@ -87,9 +88,9 @@ def test_get_most_viewed_articles_exception(mock_get_articles_request):
     with pytest.raises(Exception) as e:
         WikipediaAPIWrapper().get_most_viewed_articles(year, month)
 
-    expected_url = f"top/en.wikipedia/all-access/{year}/{month:02d}/all-days"
-    mock_get_articles_request.assert_called_with(expected_url)
-    assert str(e.value) == 'mocked error'
+        expected_url = f"top/en.wikipedia/all-access/{year}/{month:02d}/all-days"
+        mock_get_articles_request.assert_called_with(expected_url)
+        assert str(e.value) == 'mocked error'
 
 
 @patch.object(WikipediaAPIWrapper, '_get_articles_request')
@@ -106,8 +107,8 @@ def test_get_most_viewed_articles_range_user_error(mock_get_articles_request):
     with pytest.raises(Exception) as e:
         WikipediaAPIWrapper().get_most_viewed_articles(year, month, start_day=start_day, end_day=end_day)
 
-    mock_get_articles_request.assert_not_called()
-    assert str(e.value) == 'End date cannot be smaller than start date'
+        mock_get_articles_request.assert_not_called()
+        assert str(e.value) == 'End date cannot be smaller than start date'
 
 
 @patch.object(WikipediaAPIWrapper, '_get_articles_request', return_value=[])
@@ -198,9 +199,9 @@ def test_get_article_view_count_for_range_user_error(mock_get_articles_request):
         WikipediaAPIWrapper().get_article_view_count(article_title, year, month,
                                                      start_day=start_day, end_day=end_day)
 
-    expected_url = f"per-article/en.wikipedia/all-access/all-agents/{article_title}/daily/{start}/{end}"
-    mock_get_articles_request.assert_called_with(expected_url)
-    assert str(e.value) == 'mocked error'
+        expected_url = f"per-article/en.wikipedia/all-access/all-agents/{article_title}/daily/{start}/{end}"
+        mock_get_articles_request.assert_called_with(expected_url)
+        assert str(e.value) == 'mocked error'
 
 
 @patch.object(WikipediaAPIWrapper, '_get_articles_request')
@@ -217,8 +218,8 @@ def test_get_article_view_count_month_user_error(mock_get_articles_request):
     with pytest.raises(Exception) as e:
         WikipediaAPIWrapper().get_article_view_count(article_title, year, month)
 
-    mock_get_articles_request.assert_not_called()
-    assert str(e.value) == 'bad month number 0; must be 1-12'
+        mock_get_articles_request.assert_not_called()
+        assert str(e.value) == 'bad month number 0; must be 1-12'
 
 
 @patch.object(WikipediaAPIWrapper, '_get_articles_request', return_value=[])
@@ -282,9 +283,9 @@ def test_get_day_with_most_views_exception(mock_get_articles_request):
     with pytest.raises(Exception) as e:
         WikipediaAPIWrapper().get_day_with_most_views(article_title, year, month)
 
-    expected_url = f"per-article/en.wikipedia/all-access/all-agents/{article_title}/daily/{start}/{end}"
-    mock_get_articles_request.assert_called_with(expected_url)
-    assert str(e.value) == 'mocked error'
+        expected_url = f"per-article/en.wikipedia/all-access/all-agents/{article_title}/daily/{start}/{end}"
+        mock_get_articles_request.assert_called_with(expected_url)
+        assert str(e.value) == 'mocked error'
 
 
 @patch.object(WikipediaAPIWrapper, '_get_articles_request', return_value=[])
@@ -304,3 +305,44 @@ def test_get_day_with_most_views_no_response(mock_get_articles_request):
     expected_url = f"per-article/en.wikipedia/all-access/all-agents/{article_title}/daily/{start}/{end}"
     mock_get_articles_request.assert_called_with(expected_url)
     assert date is None
+
+
+def test_get_articles_request():
+    """
+    Using an example endpoint, test that the base request function
+    to call the Wikipedia API returns the expected data.
+    """
+    url = f"top/en.wikipedia/all-access/2023/03/10"
+    expected_response = {'items': [{'articles': [{'article': 'test1', 'views': 300},
+                                                 {'article': 'test2', 'views': 200}]}]}
+
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = expected_response
+
+    with app.test_request_context():
+        with patch('requests.get', return_value=mock_response) as mock_get:
+            articles = WikipediaAPIWrapper()._get_articles_request(url)
+
+            mock_get.assert_called_once()
+            assert articles == [{'articles': [{'article': 'test1', 'views': 300},
+                                              {'article': 'test2', 'views': 200}]}]
+
+
+def test_get_articles_request_exception():
+    """
+    Using an example endpoint, test that an exception is thrown
+    when requesting info from the Wikipedia API throws an error.
+    """
+    url = f"top/en.wikipedia/all-access/2023/03/10"
+
+    mock_response = Mock()
+    mock_response.side_effect = Exception('mocked error')
+
+    with app.test_request_context():
+        with patch('requests.get', return_value=mock_response) as mock_get:
+            with pytest.raises(Exception) as e:
+                WikipediaAPIWrapper()._get_articles_request(url)
+
+                mock_get.assert_called_once()
+                assert str(e.value) == 'mocked error'
