@@ -1,7 +1,7 @@
 """
 Flask routes for Wikipedia API wrapper
 """
-
+import markdown
 from flask import Flask, jsonify, request, render_template
 from wikipedia.wikipedia_api import WikipediaAPIWrapper
 from exception import CustomException
@@ -12,8 +12,12 @@ wrapper = WikipediaAPIWrapper()
 
 @app.route('/')
 def wikipedia_api_home():
-    """Index route on app load."""
-    return "Welcome to the Wikipedia API Flask App!"
+    """Index route on app load, displays the README."""
+    with open('README.md', 'r') as readme_file:
+        readme_content = readme_file.read()
+        html_content = markdown.markdown(readme_content)
+
+    return render_template('welcome.html', content=html_content)
 
 
 @app.route('/most_viewed_articles')

@@ -3,3 +3,4 @@ requests
 pytest
 requests-mock
 werkzeug==2.0.3
+markdown

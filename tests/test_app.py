@@ -15,7 +15,7 @@ def test_index_route():
 	response = app.test_client().get('/')
 
 	assert response.status_code == 200
-	assert response.data.decode('utf-8') == expected_response_msg
+	assert b'Wikipedia API Wrapper' in response.data
 
 
 @patch.object(wikipedia.wikipedia_api.WikipediaAPIWrapper, 'get_most_viewed_articles')
