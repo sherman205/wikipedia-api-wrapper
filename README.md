@@ -67,3 +67,10 @@ If a test fails, the execution of image creation and spinning up the container s
 
 In the CLI, run `pytest`.
 
+## Future Considerations
+
+1. Add docker-compose-tests.yml for more robust automated testing
+2. Improve handling of requests to Wikipedia API, including specific error handling and rate limiting considerations
+3. Improve UI functionality, add more informative templates and ways to interact with the data
+4. Add CI/CD pipeline
+
