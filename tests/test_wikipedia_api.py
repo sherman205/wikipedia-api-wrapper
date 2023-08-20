@@ -1,6 +1,7 @@
 """
 Tests for logic in wikipedia_api.py
 """
+import pytest
 from unittest.mock import patch
 from wikipedia.wikipedia_api import WikipediaAPIWrapper
 
@@ -72,11 +73,49 @@ def test_get_most_viewed_articles_for_range(mock_get_articles_request):
                         {'article': 'test3', 'views': 100}]
 
 
-@patch.object(WikipediaAPIWrapper, '_get_articles_request', return_value=[])
-def test_get_most_viewed_articles_no_response(mock_get_articles_request):
+@patch.object(WikipediaAPIWrapper, '_get_articles_request')
+def test_get_most_viewed_articles_exception(mock_get_articles_request):
     """
     Tests that when calling get_most_viewed_articles() with year and month
-    and the Wikipedia API returns no data, then no articles get returned.
+    and the Wikipedia API throws an error, an exception is raised up.
+    """
+    year = 2020
+    month = 3
+
+    mock_get_articles_request.side_effect = Exception('mocked error')
+
+    with pytest.raises(Exception) as e:
+        WikipediaAPIWrapper().get_most_viewed_articles(year, month)
+
+    expected_url = f"top/en.wikipedia/all-access/{year}/{month:02d}/all-days"
+    mock_get_articles_request.assert_called_with(expected_url)
+    assert str(e.value) == 'mocked error'
+
+
+@patch.object(WikipediaAPIWrapper, '_get_articles_request')
+def test_get_most_viewed_articles_range_user_error(mock_get_articles_request):
+    """
+    Tests that when calling get_most_viewed_articles() with year, month
+    as well as start_day and end_day, but the start_day > end_day, an exception is raised up.
+    """
+    year = 2020
+    month = 3
+    start_day = 12
+    end_day = 7
+
+    with pytest.raises(Exception) as e:
+        WikipediaAPIWrapper().get_most_viewed_articles(year, month, start_day=start_day, end_day=end_day)
+
+    mock_get_articles_request.assert_not_called()
+    assert str(e.value) == 'End date cannot be smaller than start date'
+
+
+@patch.object(WikipediaAPIWrapper, '_get_articles_request', return_value=[])
+def test_get_most_viewed_articles_no_articles_returned(mock_get_articles_request):
+    """
+    Tests that when calling get_most_viewed_articles() with year, month
+    and the Wikipedia API returns an empty list of no article data, assert
+    that an empty list is returned.
     """
     year = 2020
     month = 3
@@ -85,14 +124,14 @@ def test_get_most_viewed_articles_no_response(mock_get_articles_request):
 
     expected_url = f"top/en.wikipedia/all-access/{year}/{month:02d}/all-days"
     mock_get_articles_request.assert_called_with(expected_url)
-    assert articles == []
+    assert len(articles) == 0
 
 
 @patch.object(WikipediaAPIWrapper, '_get_articles_request')
 def test_get_article_view_count(mock_get_articles_request):
     """
     Tests that calling get_article_view_count() with article title, year, and month
-    forms the correct Wikipedia API url endpoint and returns the expected data.
+    forms the correct Wikipedia API url endpoint and returns the correct view count.
     """
     article_title = "test1"
     year = 2020
@@ -116,13 +155,13 @@ def test_get_article_view_count(mock_get_articles_request):
 def test_get_article_view_count_for_range(mock_get_articles_request):
     """
     Tests that calling get_article_view_count() with article title, year, month, start_day, and end_day
-    forms the correct Wikipedia API url endpoint and returns the expected data.
+    forms the correct Wikipedia API url endpoint and returns the correct view count.
     """
     article_title = "test1"
     year = 2020
     month = 3
-    start_day = 5
-    end_day = 10
+    start_day = 10
+    end_day = 5
     start = f'{year}{month:02d}{start_day:02d}'
     end = f'{year}{month:02d}{end_day:02d}'
 
@@ -137,6 +176,49 @@ def test_get_article_view_count_for_range(mock_get_articles_request):
     expected_url = f"per-article/en.wikipedia/all-access/all-agents/{article_title}/daily/{start}/{end}"
     mock_get_articles_request.assert_called_with(expected_url)
     assert view_count == 500
+
+
+@patch.object(WikipediaAPIWrapper, '_get_articles_request')
+def test_get_article_view_count_for_range_user_error(mock_get_articles_request):
+    """
+    Tests that calling get_article_view_count() with article title, year, month,
+    as well as start_day and end_day, but the start_day > end_day, an exception is raised up.
+    """
+    article_title = "test1"
+    year = 2020
+    month = 3
+    start_day = 5
+    end_day = 10
+    start = f'{year}{month:02d}{start_day:02d}'
+    end = f'{year}{month:02d}{end_day:02d}'
+
+    mock_get_articles_request.side_effect = Exception('mocked error')
+
+    with pytest.raises(Exception) as e:
+        WikipediaAPIWrapper().get_article_view_count(article_title, year, month,
+                                                     start_day=start_day, end_day=end_day)
+
+    expected_url = f"per-article/en.wikipedia/all-access/all-agents/{article_title}/daily/{start}/{end}"
+    mock_get_articles_request.assert_called_with(expected_url)
+    assert str(e.value) == 'mocked error'
+
+
+@patch.object(WikipediaAPIWrapper, '_get_articles_request')
+def test_get_article_view_count_month_user_error(mock_get_articles_request):
+    """
+    Tests that calling get_article_view_count() with article title, year and
+    a bad month value
+    forms the correct Wikipedia API url endpoint and returns the expected data.
+    """
+    article_title = "test1"
+    year = 2020
+    month = 0
+
+    with pytest.raises(Exception) as e:
+        WikipediaAPIWrapper().get_article_view_count(article_title, year, month)
+
+    mock_get_articles_request.assert_not_called()
+    assert str(e.value) == 'bad month number 0; must be 1-12'
 
 
 @patch.object(WikipediaAPIWrapper, '_get_articles_request', return_value=[])
@@ -162,7 +244,7 @@ def test_get_article_view_count_no_response(mock_get_articles_request):
 def test_get_day_with_most_views(mock_get_articles_request):
     """
     Tests that calling get_day_with_most_views() with article title, year, and month
-    forms the correct Wikipedia API url endpoint and returns the expected data.
+    forms the correct Wikipedia API url endpoint and returns the stringified date.
     """
     article_title = "test1"
     year = 2020
@@ -181,6 +263,28 @@ def test_get_day_with_most_views(mock_get_articles_request):
     expected_url = f"per-article/en.wikipedia/all-access/all-agents/{article_title}/daily/{start}/{end}"
     mock_get_articles_request.assert_called_with(expected_url)
     assert date == '03/19/2020'
+
+
+@patch.object(WikipediaAPIWrapper, '_get_articles_request')
+def test_get_day_with_most_views_exception(mock_get_articles_request):
+    """
+    Tests that when calling get_day_with_most_views() with article title, year, and month
+    and the Wikipedia API throws an error, an exception is raised up.
+    """
+    article_title = "test1"
+    year = 2020
+    month = 3
+    start = f'{year}{month:02d}01'
+    end = f'{year}{month:02d}31'
+
+    mock_get_articles_request.side_effect = Exception('mocked error')
+
+    with pytest.raises(Exception) as e:
+        WikipediaAPIWrapper().get_day_with_most_views(article_title, year, month)
+
+    expected_url = f"per-article/en.wikipedia/all-access/all-agents/{article_title}/daily/{start}/{end}"
+    mock_get_articles_request.assert_called_with(expected_url)
+    assert str(e.value) == 'mocked error'
 
 
 @patch.object(WikipediaAPIWrapper, '_get_articles_request', return_value=[])

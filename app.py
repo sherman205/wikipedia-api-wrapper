@@ -2,8 +2,9 @@
 Flask routes for Wikipedia API wrapper
 """
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from wikipedia.wikipedia_api import WikipediaAPIWrapper
+from exception import CustomException
 
 app = Flask(__name__)
 wrapper = WikipediaAPIWrapper()
@@ -29,8 +30,12 @@ def get_most_viewed_articles():
     start_day = int(start_day) if start_day else None
     end_day = int(end_day) if end_day else None
 
-    articles = wrapper.get_most_viewed_articles(year, month, day, start_day, end_day)
-    return jsonify(articles)
+    try:
+        articles = wrapper.get_most_viewed_articles(year, month, day, start_day, end_day)
+        return jsonify(articles)
+    except CustomException as e:
+        error_message = str(e)
+        return render_template('error.html', error_message=error_message)
 
 
 @app.route('/article_view_count/<article_title>')
@@ -45,8 +50,12 @@ def get_article_view_count(article_title):
     start_day = int(start_day) if start_day else None
     end_day = int(end_day) if end_day else None
 
-    view_count = wrapper.get_article_view_count(article_title, year, month, start_day, end_day)
-    return jsonify({'article': article_title, 'view_count': view_count})
+    try:
+        view_count = wrapper.get_article_view_count(article_title, year, month, start_day, end_day)
+        return jsonify({'article': article_title, 'view_count': view_count})
+    except CustomException as e:
+        error_message = str(e)
+        return render_template('error.html', error_message=error_message)
 
 
 @app.route('/most_views_day/<article_title>')
@@ -55,8 +64,22 @@ def get_most_views_day(article_title):
     year = int(request.args.get('year', 2023))
     month = int(request.args.get('month', 1))
 
-    most_views_day = wrapper.get_day_with_most_views(article_title, year, month)
-    return jsonify({'article': article_title, 'most_views_day': most_views_day})
+    try:
+        most_views_day = wrapper.get_day_with_most_views(article_title, year, month)
+        return jsonify({'article': article_title, 'most_views_day': most_views_day})
+    except CustomException as e:
+        error_message = str(e)
+        return render_template('error.html', error_message=error_message)
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
 
 
 if __name__ == '__main__':

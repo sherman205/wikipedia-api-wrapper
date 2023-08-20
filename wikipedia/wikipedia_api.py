@@ -6,6 +6,7 @@ import requests
 import calendar
 from flask import request, current_app
 from datetime import timedelta, datetime
+from exception import CustomException
 
 
 class WikipediaAPIWrapper:
@@ -27,6 +28,9 @@ class WikipediaAPIWrapper:
             start_date = datetime(year, month, start_day)
             end_date = datetime(year, month, end_day)
             delta = timedelta(days=1)
+
+            if start_date > end_date:
+                raise CustomException("End date cannot be smaller than start date")
 
             # start and end date inclusive
             while start_date <= end_date:
@@ -67,7 +71,10 @@ class WikipediaAPIWrapper:
             start = f"{year}{month:02d}{start_day:02d}"
             end = f"{year}{month:02d}{end_day:02d}"
         else:
-            days_in_month = calendar.monthrange(year, month)[1]
+            try:
+                days_in_month = calendar.monthrange(year, month)[1]
+            except Exception as e:
+                raise CustomException(f"{e}")
             start = f"{year}{month:02d}01"
             end = f"{year}{month:02d}{days_in_month}"
 
@@ -83,7 +90,10 @@ class WikipediaAPIWrapper:
 
     def get_day_with_most_views(self, article_title, year, month):
         """Returns the date when an article got the most page views."""
-        days_in_month = calendar.monthrange(year, month)[1]
+        try:
+            days_in_month = calendar.monthrange(year, month)[1]
+        except Exception as e:
+            raise CustomException(f"{e}")
         start = f"{year}{month:02d}01"
         end = f"{year}{month:02d}{days_in_month}"
         url_suffix = f"per-article/en.wikipedia/all-access/all-agents/{article_title}/daily/{start}/{end}"
@@ -115,7 +125,7 @@ class WikipediaAPIWrapper:
             data = response.json()
             articles_data = data.get('items', [])
         except requests.HTTPError as e:
+            raise CustomException(f"{e}")
             current_app.logger.info(f"Failed to retrieve data from the API: {e}")
-            articles_data = []
 
         return articles_data
