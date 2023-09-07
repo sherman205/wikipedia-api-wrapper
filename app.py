@@ -3,10 +3,12 @@ Flask routes for Wikipedia API wrapper
 """
 import markdown
 from flask import Flask, jsonify, request, render_template
+from flask_cors import CORS
 from wikipedia.wikipedia_api import WikipediaAPIWrapper
 from exception import CustomException
 
 app = Flask(__name__)
+CORS(app)
 wrapper = WikipediaAPIWrapper()
 
 

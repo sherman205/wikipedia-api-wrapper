@@ -11,7 +11,6 @@ from exception import CustomException
 
 def test_index_route():
 	"""Test that index (/) endpoint returns 200 status and expected message."""
-	expected_response_msg = 'Welcome to the Wikipedia API Flask App!'
 	response = app.test_client().get('/')
 
 	assert response.status_code == 200
